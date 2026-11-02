@@ -1,0 +1,16 @@
+__pycache__/
+*.py[cod]
+*.sqlite3
+venv/
+.venv/
+env/
+.env
+.env.*
+!.env.example
+staticfiles/
+media/
+_backup_*/
+*.zip
+*.log
+screenshots/
+desktop.ini

@@ -1,0 +1,22 @@
+databases:
+  - name: airport-project-db
+    plan: free
+    databaseName: airport_project
+    user: airport_project
+
+services:
+  - type: web
+    name: airport-project
+    runtime: python
+    plan: free
+    buildCommand: bash build.sh
+    startCommand: gunicorn airport_project.wsgi:application
+    envVars:
+      - key: DATABASE_URL
+        fromDatabase:
+          name: airport-project-db
+          property: connectionString
+      - key: SECRET_KEY
+        generateValue: true
+      - key: DJANGO_DEBUG
+        value: "false"

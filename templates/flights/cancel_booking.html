@@ -1,0 +1,34 @@
+{% extends "base.html" %}
+
+{% block title %}Cancel Booking | DKA Digital{% endblock %}
+
+{% block content %}
+<div class="wrap wrap--narrow page-head text-center reveal">
+  <div class="eyebrow mb-2 text-warn">ACTION REQUIRED</div>
+  <h1 class="h1 mb-2">Cancel Booking.</h1>
+  <p class="lead-text">Are you sure you want to cancel this reservation?</p>
+</div>
+
+<div class="wrap wrap--narrow reveal reveal-d1 pb-5 mb-5" style="max-width: 600px;">
+  <div class="surface surface-pad">
+    <div class="flash flash--warning mb-4" style="padding: 24px;">
+      <i data-lucide="alert-triangle" class="ico ico-xl" style="margin-top: 0;"></i>
+      <div>
+        <h2 class="h4 mb-1">Warning</h2>
+        <p class="muted">This action cannot be undone. Cancelling this booking will permanently release seat <strong>{{ booking.seat_number }}</strong> on flight <strong>{{ booking.flight.flight_number }}</strong>.</p>
+      </div>
+    </div>
+    
+    <div style="background: var(--ivory-50); padding: 20px; border-radius: 12px; margin-bottom: 24px;">
+      <div class="label-xs mb-1">REFERENCE</div>
+      <div class="mono" style="font-weight: 600; font-size: 16px;">{{ booking.booking_reference }}</div>
+    </div>
+    
+    <form method="post" class="row-flex" style="justify-content: center; border-top: 1px solid var(--line); padding-top: 24px;">
+      {% csrf_token %}
+      <button class="btn btn-danger" type="submit">Yes, Cancel Booking</button>
+      <a class="btn btn-outline" href="{% url 'my_bookings' %}">Keep Booking</a>
+    </form>
+  </div>
+</div>
+{% endblock %}

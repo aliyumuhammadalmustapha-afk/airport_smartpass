@@ -1,0 +1,240 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}DKA Gate Scanner | Umaru Musa Yar'Adua Airport{% endblock %}
+{% block body_class %}gate-scanner-body{% endblock %}
+
+{% block content %}
+<style>
+  .scanner-layout {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 32px;
+    padding: 32px;
+    max-width: 1000px;
+    margin: 0 auto;
+  }
+  @media (min-width: 900px) {
+    .scanner-layout {
+      grid-template-columns: 440px 1fr;
+      align-items: start;
+    }
+  }
+  .scanner-box {
+    position: relative;
+    border-radius: 24px;
+    overflow: hidden;
+    background: #000;
+    box-shadow: var(--sh-2);
+    aspect-ratio: 1/1;
+    width: 100%;
+    max-width: 440px;
+    margin: 0 auto;
+  }
+  .scan-result-box, .scanner-result-box {
+    padding: 24px;
+    border-radius: 16px;
+    text-align: center;
+    background: #fff;
+    border: 1px solid var(--line);
+    margin-top: 24px;
+    transition: all 0.2s ease;
+  }
+  .result-valid { background: var(--ok-tint); border-color: rgba(22,163,74,0.3); }
+  .result-used { background: var(--warn-tint); border-color: rgba(217,119,6,0.3); }
+  .result-expired { background: var(--sky-tint); border-color: rgba(59,130,246,0.3); }
+  .result-invalid { background: var(--bad-tint); border-color: rgba(220,38,38,0.3); }
+
+  .staff-instructions-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 16px;
+    margin-bottom: 24px;
+    font-family: 'Outfit', sans-serif;
+  }
+  @media (max-width: 500px) {
+    .staff-instructions-grid {
+      grid-template-columns: 1fr;
+    }
+  }
+  .instruction-item {
+    background: #fff;
+    padding: 16px;
+    border-radius: 12px;
+    border: 1px solid var(--line);
+    font-size: 14px;
+    line-height: 1.4;
+    color: var(--text-2);
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+  }
+  .inst-icon {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 32px;
+    height: 32px;
+    border-radius: 8px;
+    background: #F3F4F6;
+    color: #4B5563;
+  }
+  .inst-icon.ok { background: var(--ok-tint); color: var(--ok-600); }
+  .inst-icon.bad { background: var(--bad-tint); color: var(--bad-600); }
+  .inst-icon.warn { background: var(--warn-tint); color: var(--warn-600); }
+</style>
+
+<div class="scanner-layout">
+  <div style="margin: 0 auto; width: 100%;">
+    <div class="mb-4">
+      <h1 class="h2 mb-1" style="font-family: 'Instrument Serif', serif;">Gate Scanner</h1>
+      <p class="muted">Signed in as <strong>{{ request.user.email }}</strong>. Point the camera at the passenger's digital or printed boarding pass.</p>
+    </div>
+    
+    <div class="scanner-box">
+      <div id="qr-reader" style="width: 100%; height: 100%;"></div>
+    </div>
+    
+    <div class="row-between mt-4" style="flex-wrap: wrap; gap: 12px;">
+      <div id="scanner-status" class="muted" style="font-size: 13.5px;">Ready to scan...</div>
+      <div class="row-flex" style="flex-wrap: wrap; gap: 8px;">
+        <button id="start-scanner" class="btn btn-ink btn-sm" type="button"><i data-lucide="camera" class="ico"></i> Start Camera</button>
+        <button id="stop-scanner" class="btn btn-outline btn-sm" type="button" disabled>Stop</button>
+        <label for="qr-file-input" class="btn btn-outline btn-sm" style="cursor: pointer; margin:0;" title="Upload or capture boarding pass image or PDF">
+          <i data-lucide="file-up" class="ico"></i> Scan Image / PDF
+        </label>
+        <input type="file" id="qr-file-input" accept="image/*,application/pdf" style="display:none;">
+      </div>
+    </div>
+
+    <form class="sr-only">{% csrf_token %}</form>
+    
+    <div id="scan-result" class="scan-result-box result-idle">
+      <div id="scan-result-title" class="label-xs mb-1">WAITING FOR SCAN</div>
+      <div id="scan-result-details" class="h3 mb-1 text-gold" style="font-family: 'Outfit', sans-serif;">Ready</div>
+      <div id="scan-result-message" class="muted">Awaiting QR code data...</div>
+    </div>
+  </div>
+
+  <div>
+    <div class="surface surface-pad" style="background: #F9FAFB; padding: 24px; height: 100%;">
+      <h3 class="h4 mb-3" style="font-family: 'Outfit', sans-serif;">Staff Instructions</h3>
+      
+      <div class="staff-instructions-grid">
+        <div class="instruction-item">
+          <div class="inst-icon"><i data-lucide="scan-line" class="ico"></i></div>
+          <div>Hold the scanner 15-20cm from the passenger's screen.</div>
+        </div>
+        <div class="instruction-item">
+          <div class="inst-icon"><i data-lucide="sun" class="ico"></i></div>
+          <div>If the screen is too dim, ask the passenger to increase brightness.</div>
+        </div>
+        <div class="instruction-item">
+          <div class="inst-icon ok"><i data-lucide="check-circle-2" class="ico"></i></div>
+          <div><strong style="color: var(--ok-600);">Valid (Green)</strong><br>Passenger cleared for aircraft boarding.</div>
+        </div>
+        <div class="instruction-item">
+          <div class="inst-icon bad"><i data-lucide="x-circle" class="ico"></i></div>
+          <div><strong style="color: var(--bad-600);">Invalid (Red)</strong><br>Deny boarding. Check reason.</div>
+        </div>
+        <div class="instruction-item" style="grid-column: 1 / -1; flex-direction: row; align-items: center; gap: 16px;">
+          <div class="inst-icon warn" style="flex-shrink: 0;"><i data-lucide="alert-triangle" class="ico"></i></div>
+          <div><strong style="color: var(--warn-600);">Already Scanned (Amber):</strong> Duplicate pass detected. Deny entry and verify passenger.</div>
+        </div>
+      </div>
+      
+      <div class="row-between mb-2 mt-4">
+        <h3 class="h4" style="font-family: 'Outfit', sans-serif;">Session Stats</h3>
+      </div>
+      <div style="background: #fff; border: 1px solid var(--line); border-radius: 12px; padding: 16px; margin-bottom: 24px;">
+        <div style="font-size: 12px; color: var(--text-3); text-transform: uppercase; font-weight: 600; margin-bottom: 4px;">Passes Scanned</div>
+        <div style="font-size: 32px; font-weight: 700; color: #111827; font-family: 'Outfit', sans-serif;" id="session-scan-count">0</div>
+      </div>
+      
+      <a class="btn btn-outline w-100" href="{% url 'gate_history' %}"><i data-lucide="history" class="ico"></i> View Full Scan History</a>
+    </div>
+  </div>
+</div>
+
+<div class="wrap mb-6" id="today-departures" style="max-width: 1000px; padding: 0 32px 48px;">
+  <div class="surface surface-pad" style="background: #ffffff; border: 1px solid var(--line); border-radius: 16px; box-shadow: var(--sh-1);">
+    <div class="row-between mb-3" style="flex-wrap: wrap; gap: 8px;">
+      <div>
+        <div class="eyebrow" style="color: var(--gold-600); font-weight: 700;">DAILY FLIGHT ROSTER</div>
+        <h2 class="h3 mb-0" style="font-family: 'Outfit', sans-serif;">Today's Departures ({{ today|date:"l, d M Y" }})</h2>
+      </div>
+      <div class="mono subtle" style="font-size: 13px; display: flex; align-items: center; gap: 6px;">
+        <i data-lucide="clock" class="ico ico-sm"></i> Local Airport Time (WAT)
+      </div>
+    </div>
+
+    <div class="table-responsive">
+      <table class="table w-100" style="font-size: 14px;">
+        <thead>
+          <tr style="border-bottom: 2px solid var(--line);">
+            <th style="padding: 12px 16px; text-align: left;">Time (WAT)</th>
+            <th style="padding: 12px 16px; text-align: left;">Flight</th>
+            <th style="padding: 12px 16px; text-align: left;">Airline</th>
+            <th style="padding: 12px 16px; text-align: left;">Destination</th>
+            <th style="padding: 12px 16px; text-align: left;">Gate</th>
+            <th style="padding: 12px 16px; text-align: left;">Status</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% if departures_today %}
+            {% for flight in departures_today %}
+            <tr style="border-bottom: 1px solid var(--line);">
+              <td class="mono" style="padding: 12px 16px; font-weight: 700;">{{ flight.departure_time|time:"H:i" }}</td>
+              <td class="mono" style="padding: 12px 16px; font-weight: 700; color: var(--gold-600);">{{ flight.flight_number }}</td>
+              <td style="padding: 12px 16px;">{{ flight.airline.name }}</td>
+              <td style="padding: 12px 16px;">{{ flight.destination }} (Abuja)</td>
+              <td class="mono" style="padding: 12px 16px; font-weight: 700; color: var(--sky-600);">A1</td>
+              <td style="padding: 12px 16px;">
+                {% if flight.status == 'boarding' %}
+                  <span class="chip chip-warn" style="font-weight: 700;">BOARDING</span>
+                {% elif flight.status == 'departed' %}
+                  <span class="chip chip-subtle">DEPARTED</span>
+                {% elif flight.status == 'cancelled' %}
+                  <span class="chip chip-bad">CANCELLED</span>
+                {% else %}
+                  <span class="chip chip-ok">SCHEDULED</span>
+                {% endif %}
+              </td>
+            </tr>
+            {% endfor %}
+          {% else %}
+            <tr>
+              <td colspan="6" class="text-center subtle py-4" style="padding: 24px;">No departures scheduled for today.</td>
+            </tr>
+          {% endif %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block extra_scripts %}
+<!-- Local bundled html5-qrcode with automatic CDN fallback -->
+<script src="{% static 'js/html5-qrcode.min.js' %}"></script>
+<script>
+  if (!window.Html5Qrcode && (!window.__Html5QrcodeLibrary__ || !window.__Html5QrcodeLibrary__.Html5Qrcode)) {
+    document.write('<script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js"><\/script>');
+  }
+</script>
+<script>
+  if (typeof window.Html5Qrcode === "undefined" && window.__Html5QrcodeLibrary__ && window.__Html5QrcodeLibrary__.Html5Qrcode) {
+    window.Html5Qrcode = window.__Html5QrcodeLibrary__.Html5Qrcode;
+  }
+</script>
+
+<!-- PDF.js library for scanning downloaded PDF boarding passes -->
+<script src="{% static 'js/pdf.min.js' %}"></script>
+<script>
+  if (typeof window.pdfjsLib !== "undefined") {
+    window.pdfjsLib.GlobalWorkerOptions.workerSrc = "{% static 'js/pdf.worker.min.js' %}";
+  }
+</script>
+
+<script src="{% static 'js/gate_scanner.js' %}?v=13" defer></script>
+{% endblock %}

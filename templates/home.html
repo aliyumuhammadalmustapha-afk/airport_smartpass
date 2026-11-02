@@ -1,0 +1,183 @@
+{% extends "base.html" %}
+{% load static %}
+{% block title %}DKA Digital | Smart Airport Boarding Pass System{% endblock %}
+
+{% block content %}
+<style>
+  .hero-dusk {
+    position: relative;
+    min-height: 90vh;
+    display: flex;
+    align-items: center;
+    padding: 120px 0 80px;
+    background: var(--ink-900) url('{% static "img/hero-dusk.jpg" %}') no-repeat center right / cover;
+  }
+  .hero-dusk::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    /* Darken the left 45% and bottom */
+    background: linear-gradient(90deg, rgba(6,10,20,0.85) 0%, rgba(6,10,20,0.5) 50%, transparent 100%),
+                linear-gradient(0deg, rgba(6,10,20,0.9) 0%, transparent 30%);
+  }
+  .hero-dusk__inner {
+    position: relative;
+    z-index: 10;
+    display: grid;
+    gap: 64px;
+    grid-template-columns: 1fr;
+  }
+  @media (min-width: 992px) {
+    .hero-dusk__inner {
+      grid-template-columns: 1.1fr 0.9fr;
+    }
+  }
+  .on-dark {
+    color: var(--text-on-dark);
+  }
+</style>
+
+<div class="hero-dusk">
+  <div class="wrap hero-dusk__inner">
+    <!-- Left Column: Headline and Retrieve Widget -->
+    <div class="reveal">
+      <div class="eyebrow eyebrow--plain mb-3" style="color: var(--gold-400);">UMARU MUSA YAR'ADUA AIRPORT</div>
+      <h1 class="display mb-3" style="color: #fff;">
+        The smarter way<br>to board in <span class="serif-accent text-gold">Katsina</span>.
+      </h1>
+      <p class="lead-text mb-5" style="color: var(--text-on-dark-2); max-width: 480px;">
+        Experience seamless departures. Get your digital boarding pass in seconds, right from your phone.
+      </p>
+      
+      <!-- Clean Retrieve Widget -->
+      <div class="surface-pad" style="background: rgba(255, 255, 255, 0.1); border: 1px solid rgba(255, 255, 255, 0.2); border-radius: 16px; max-width: 440px; backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px);">
+        <h3 class="h4 mb-2 text-on-dark">Retrieve Boarding Pass</h3>
+        <p class="subtle mb-4" style="font-size: 14px; color: var(--text-on-dark-2);">Enter your booking reference (e.g., DKA-2024-00123)</p>
+        <form method="post" action="{% url 'home' %}" class="on-dark">
+          {% csrf_token %}
+          <div class="field mb-3">
+            <input type="text" name="booking_reference" class="input" placeholder="Booking Reference" required autocomplete="off" style="background: rgba(255, 255, 255, 0.1); border-color: rgba(255, 255, 255, 0.2); color: #fff;">
+          </div>
+          <button type="submit" class="btn btn-gold w-100">Get Boarding Pass</button>
+        </form>
+        {% if not user.is_authenticated %}
+        <div class="mt-4 text-center">
+          <a href="{% url 'login' %}" class="link-arrow" style="font-size: 13px; color: var(--text-on-dark-3);">Check in with staff login <i data-lucide="arrow-right" class="ico ico-sm"></i></a>
+        </div>
+        {% endif %}
+      </div>
+    </div>
+    
+    <!-- Right Column: Empty to show the beautiful plane -->
+    <div class="reveal reveal-d2">
+    </div>
+  </div>
+</div>
+
+<!-- Process Section -->
+<section id="how-it-works" class="section" style="background: var(--ivory-100);">
+  <div class="wrap">
+    <div class="section-head section-head--center reveal">
+      <div class="eyebrow">HOW IT WORKS</div>
+      <h2 class="h2">From booking to boarding.</h2>
+    </div>
+
+    <div class="grid-3 reveal reveal-d1">
+      <div class="surface surface-pad surface--lift">
+        <div style="width: 48px; height: 48px; border-radius: 12px; background: var(--sky-tint); color: var(--sky-600); display: grid; place-items: center; margin-bottom: 20px;">
+          <i data-lucide="calendar" class="ico ico-lg"></i>
+        </div>
+        <h3 class="h4 mb-2">Book your seat</h3>
+        <p class="muted">Select a Katsina to Abuja flight and confirm your seat online in under 2 minutes.</p>
+      </div>
+      
+      <div class="surface surface-pad surface--lift">
+        <div style="width: 48px; height: 48px; border-radius: 12px; background: var(--sky-tint); color: var(--sky-600); display: grid; place-items: center; margin-bottom: 20px;">
+          <i data-lucide="smartphone" class="ico ico-lg"></i>
+        </div>
+        <h3 class="h4 mb-2">Check in online</h3>
+        <p class="muted">Complete check-in before you leave home. No counter queue required.</p>
+      </div>
+      
+      <div class="surface surface-pad surface--lift">
+        <div style="width: 48px; height: 48px; border-radius: 12px; background: var(--sky-tint); color: var(--sky-600); display: grid; place-items: center; margin-bottom: 20px;">
+          <i data-lucide="scan" class="ico ico-lg"></i>
+        </div>
+        <h3 class="h4 mb-2">Scan and board</h3>
+        <p class="muted">Show your QR code at the gate. Verified by our staff in under 3 seconds.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- Departures Section -->
+<section id="departures" class="section">
+  <div class="wrap">
+    <div class="section-head reveal">
+      <div class="eyebrow">LIVE DEPARTURES</div>
+      <h2 class="h2">Katsina (DKA) Departures</h2>
+    </div>
+    
+    <div class="board reveal reveal-d1">
+      <div class="board__head">
+        <div class="board__title">
+          <i data-lucide="plane-takeoff" class="ico"></i>
+          <span style="font-size: 14px; font-weight: 600; letter-spacing: 0.1em; text-transform: uppercase;">Departures</span>
+        </div>
+        <div class="board__clock" id="live-clock">--:--:-- WAT</div>
+      </div>
+      
+      <div class="table-responsive">
+        <table class="board__table">
+          <thead>
+            <tr>
+              <th>Time</th>
+              <th>Destination</th>
+              <th>Flight</th>
+              <th class="board__hide-sm">Gate</th>
+              <th>Status</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% if upcoming_flights %}
+              {% for flight in upcoming_flights %}
+              <tr class="board__row">
+                <td class="mono" style="font-size: 16px; font-weight: 700; color: #fff;">{{ flight.departure_time|time:"H:i" }}</td>
+                <td style="font-weight: 600; color: #F3F4F6;">{{ flight.destination }} (ABUJA)</td>
+                <td><span class="mono" style="color: var(--gold-400); font-weight: 600;">{{ flight.flight_number }}</span> <span class="subtle" style="font-size: 12px;">({{ flight.airline.name }})</span></td>
+                <td class="board__hide-sm mono text-sky">A1</td>
+                <td>
+                  {% if flight.status == 'boarding' %}
+                    <span class="chip chip-warn" style="font-size: 11px;">BOARDING</span>
+                  {% elif flight.status == 'departed' %}
+                    <span class="chip chip-subtle" style="font-size: 11px;">DEPARTED</span>
+                  {% elif flight.status == 'cancelled' %}
+                    <span class="chip chip-bad" style="font-size: 11px;">CANCELLED</span>
+                  {% else %}
+                    <span class="chip chip-ok" style="font-size: 11px;">SCHEDULED</span>
+                  {% endif %}
+                </td>
+              </tr>
+              {% endfor %}
+            {% else %}
+              <tr class="board__row">
+                <td colspan="5" class="text-center subtle py-4">No scheduled departures found.</td>
+              </tr>
+            {% endif %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+</section>
+
+<script>
+  function updateClock() {
+    const now = new Date();
+    document.getElementById('live-clock').textContent = now.toLocaleTimeString('en-US', { hour12: false }) + ' WAT';
+  }
+  setInterval(updateClock, 1000);
+  updateClock();
+</script>
+
+{% endblock %}

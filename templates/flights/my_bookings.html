@@ -1,0 +1,97 @@
+{% extends "base.html" %}
+
+{% block title %}My Bookings | DKA Digital Boarding Pass{% endblock %}
+
+{% block content %}
+<div class="page-head wrap wrap--narrow reveal">
+  <div class="eyebrow">PASSENGER ITINERARIES</div>
+  <h1 class="h1">My Flight Bookings</h1>
+  <p class="lead-text">Manage your reservations, check in for scheduled departures, and retrieve your digital boarding passes.</p>
+</div>
+
+<div class="wrap wrap--narrow reveal reveal-d1 pb-5 mb-5">
+  <div class="stack">
+    {% if bookings %}
+      {% for booking in bookings %}
+      <div class="f-card" style="display: flex; flex-direction: column; padding: 0; background: #fff; border: 1px solid var(--line); border-radius: 16px; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05), 0 2px 4px -1px rgba(0,0,0,0.03); margin-bottom: 24px; transition: all 0.2s; overflow: hidden;">
+        <div style="background: #F9FAFB; border-bottom: 1px solid var(--line); padding: 16px 24px; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 8px;">
+          <div style="display: flex; align-items: center; gap: 12px;">
+            <div class="chip chip-{{ booking.status_style|default:'info' }}" style="height: 24px; font-size: 11px;">{{ booking.display_status }}</div>
+            <div style="font-size: 13px; font-weight: 500; color: var(--text-3);">Ref: <span style="color: #111827; font-weight: 600;">{{ booking.booking_reference }}</span></div>
+          </div>
+          <div style="display: flex; align-items: center; gap: 16px; font-size: 13px; font-weight: 500; color: var(--text-3);">
+            <div><i data-lucide="calendar" style="width:13px; height:13px; display:inline-block; vertical-align:-1px; margin-right:3px;"></i>Flight Date: <strong style="color:#111827;">{{ booking.flight.departure_date|date:"D, d M Y" }}</strong></div>
+            <div>Booked {{ booking.booking_date_wat|date:"d M Y" }}</div>
+          </div>
+        </div>
+        
+        <div style="padding: 24px; display: flex; justify-content: space-between; align-items: stretch; gap: 24px; flex-wrap: wrap;">
+          <!-- Left: Route Info -->
+          <div style="flex: 1; min-width: 260px; display: flex; align-items: center; gap: 32px;">
+            <div>
+              <div style="font-size: 24px; font-weight: 700; color: #111827;">{{ booking.flight.departure_time|time:"H:i" }}</div>
+              <div style="font-size: 14px; font-weight: 500; color: var(--text-3);">{{ booking.flight.origin }} (DKA)</div>
+            </div>
+            
+            <div style="display: flex; flex-direction: column; align-items: center; width: 60px;">
+              <div style="width: 100%; height: 2px; background: var(--line); border-radius: 2px; position: relative; margin-bottom: 8px;">
+                <div style="position: absolute; right: 0; top: 50%; transform: translate(50%, -50%); width: 6px; height: 6px; border-radius: 50%; background: var(--sky-500);"></div>
+              </div>
+              <div style="font-size: 12px; color: #111827; font-weight: 600;">{{ booking.flight.flight_number }}</div>
+            </div>
+
+            <div>
+              <div style="font-size: 24px; font-weight: 700; color: #111827;">{{ booking.flight.arrival_time|time:"H:i"|default:"10:15" }}</div>
+              <div style="font-size: 14px; font-weight: 500; color: var(--text-3);">{{ booking.flight.destination }} (ABJ)</div>
+            </div>
+          </div>
+          
+          <!-- Middle: Seat -->
+          <div style="border-left: 1px solid var(--line); padding-left: 24px; display: flex; flex-direction: column; justify-content: center; min-width: 110px;">
+            <div style="font-size: 11px; text-transform: uppercase; font-weight: 600; color: var(--text-3); letter-spacing: 0.05em; margin-bottom: 4px;">Assigned Seat</div>
+            <div style="font-size: 24px; font-weight: 700; color: var(--sky-600);">{{ booking.seat_number }}</div>
+            <div style="font-size: 12px; color: var(--text-3);">{{ booking.flight.airline.name }}</div>
+          </div>
+          
+          <!-- Right: Actions & Info -->
+          <div style="border-left: 1px solid var(--line); padding-left: 24px; display: flex; flex-direction: column; justify-content: center; gap: 8px; min-width: 220px;">
+            {% if booking.booking_status == "confirmed" %}
+              {% if booking.passenger_boarding_pass and booking.passenger_boarding_pass.is_checked_in %}
+                <a class="btn btn-ink w-100" href="{% url 'boarding_pass_detail' booking.passenger_boarding_pass.id %}" style="height: 40px;">View Boarding Pass</a>
+              {% elif booking.show_check_in %}
+                <a class="btn btn-gold w-100" href="{% url 'check_in' booking.id %}" style="height: 40px;">Check In Now</a>
+              {% else %}
+                <a class="btn btn-outline w-100" href="{% url 'check_in' booking.id %}" style="height: 40px;" title="View check-in schedule">Check-In Details</a>
+                {% if booking.check_in_state == "not_yet_open" %}
+                  <div style="font-size: 11.5px; color: var(--warn-600); line-height: 1.35; padding: 4px 6px; background: var(--warn-tint); border-radius: 6px;">
+                    <i data-lucide="clock" style="width: 11px; height: 11px; display: inline-block; vertical-align: -1px; margin-right: 2px;"></i>
+                    Check-in opens <strong>{{ booking.check_in_opens_at|date:"D, d M" }} at {{ booking.check_in_opens_at|date:"H:i" }} WAT</strong>
+                  </div>
+                {% elif booking.check_in_state == "closed" %}
+                  <div style="font-size: 11.5px; color: var(--bad-600); line-height: 1.35; padding: 4px 6px; background: var(--bad-tint); border-radius: 6px;">
+                    Online check-in closed 1h prior. Please see airport gate desk.
+                  </div>
+                {% endif %}
+              {% endif %}
+
+              {% if booking.can_cancel %}
+                <a class="btn btn-outline w-100" href="{% url 'cancel_booking' booking.id %}" style="height: 36px; font-size: 13px;">Cancel Booking</a>
+              {% endif %}
+            {% else %}
+              <div class="subtle" style="font-size: 13px;">Reservation cancelled.</div>
+            {% endif %}
+          </div>
+        </div>
+      </div>
+      {% endfor %}
+    {% else %}
+      <div class="empty">
+        <div class="empty__icon"><i data-lucide="ticket"></i></div>
+        <h3 class="h3 mb-2">No Active Bookings Found</h3>
+        <p class="muted mb-4">You have not booked any upcoming flights.</p>
+        <a class="btn btn-ink" href="{% url 'flight_list' %}">Explore Schedule</a>
+      </div>
+    {% endif %}
+  </div>
+</div>
+{% endblock %}

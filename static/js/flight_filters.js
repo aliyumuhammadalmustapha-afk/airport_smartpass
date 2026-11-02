@@ -1,0 +1,1 @@
+﻿document.addEventListener("DOMContentLoaded", () => { const form = document.querySelector("[data-flight-filters]"); if (!form) return; form.querySelectorAll("select[data-auto-filter], input[data-auto-filter]").forEach((control) => control.addEventListener("change", () => form.requestSubmit())); });

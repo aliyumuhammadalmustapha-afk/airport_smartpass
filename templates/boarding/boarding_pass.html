@@ -1,0 +1,194 @@
+{% extends "base.html" %}
+
+{% block title %}Boarding Pass | DKA Digital{% endblock %}
+
+{% block content %}
+<style>
+  .bp-wrapper {
+    max-width: 440px;
+    margin: 40px auto;
+  }
+  .bp-card {
+    background: #fff;
+    border-radius: 16px;
+    box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05), 0 20px 25px -5px rgba(0,0,0,0.1);
+    overflow: hidden;
+    position: relative;
+    border: 1px solid var(--line);
+  }
+  .bp-header {
+    background: var(--sky-500);
+    padding: 24px;
+    color: #fff;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+  .bp-body {
+    padding: 32px 24px;
+  }
+  .bp-route {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 32px;
+  }
+  .bp-city-code {
+    font-size: 32px;
+    font-weight: 700;
+    line-height: 1;
+    color: #111827;
+    margin-bottom: 4px;
+  }
+  .bp-city-name {
+    font-size: 13px;
+    color: var(--text-3);
+  }
+  .bp-plane-icon {
+    color: var(--line-strong);
+  }
+  
+  .bp-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 24px;
+    margin-bottom: 32px;
+  }
+  .bp-label {
+    font-size: 11px;
+    text-transform: uppercase;
+    font-weight: 600;
+    color: var(--text-3);
+    letter-spacing: 0.05em;
+    margin-bottom: 4px;
+  }
+  .bp-value {
+    font-size: 16px;
+    font-weight: 600;
+    color: #111827;
+  }
+  .bp-value-large {
+    font-size: 24px;
+    font-weight: 700;
+    color: #111827;
+  }
+  
+  .bp-footer {
+    padding: 32px 24px;
+    background: var(--ivory-50);
+    border-top: 2px dashed var(--line);
+    text-align: center;
+    position: relative;
+  }
+  .bp-notch {
+    position: absolute;
+    top: -12px;
+    width: 24px;
+    height: 24px;
+    background: #F9FAFB;
+    border-radius: 50%;
+    border: 1px solid var(--line);
+  }
+  .bp-notch.left { left: -12px; border-right-color: transparent; border-bottom-color: transparent; transform: rotate(-45deg); }
+  .bp-notch.right { right: -12px; border-left-color: transparent; border-bottom-color: transparent; transform: rotate(135deg); }
+  
+  .qr-box {
+    background: #fff;
+    padding: 16px;
+    border-radius: 12px;
+    display: inline-block;
+    border: 1px solid var(--line);
+    margin-bottom: 16px;
+  }
+</style>
+
+<div class="wrap">
+  <div class="bp-wrapper reveal">
+    <div class="row-between mb-4">
+      <a href="{% url 'my_bookings' %}" class="link-arrow" style="color: var(--text-3);"><i data-lucide="arrow-left" class="ico ico-sm"></i> Back to bookings</a>
+      <div style="display: flex; gap: 12px; align-items: center;">
+        <a href="{% url 'boarding_pass_pdf' boarding_pass.id %}" class="btn btn-ink btn-sm"><i data-lucide="download" class="ico"></i> Download PDF</a>
+        <a href="{% url 'boarding_pass_print' boarding_pass.id %}" target="_blank" class="btn btn-outline btn-sm"><i data-lucide="printer" class="ico"></i> Print Pass</a>
+      </div>
+    </div>
+
+    <div class="mb-4 text-center">
+      <h2 class="h3 mb-1">Your boarding pass is ready.</h2>
+      <p class="muted" style="font-size: 14px;">Please present this digital pass alongside your government-issued ID at the departure gate.</p>
+    </div>
+
+    <div class="bp-card">
+      <div class="bp-header">
+        <div>
+          <div style="font-size: 12px; opacity: 0.9; margin-bottom: 2px;">{{ boarding_pass.booking.flight.airline.name }}</div>
+          <div style="font-size: 18px; font-weight: 600;">Flight {{ boarding_pass.booking.flight.flight_number }}</div>
+        </div>
+        <div style="text-align: right;">
+          <div style="font-size: 12px; opacity: 0.9; margin-bottom: 2px;">Class</div>
+          <div style="font-size: 18px; font-weight: 600;">Economy</div>
+        </div>
+      </div>
+      
+      <div class="bp-body">
+        <div class="bp-route">
+          <div>
+            <div class="bp-city-code">{{ boarding_pass.booking.flight.origin }}</div>
+            <div class="bp-city-name">Katsina</div>
+          </div>
+          <div class="bp-plane-icon">
+            <i data-lucide="plane" class="ico ico-xl"></i>
+          </div>
+          <div style="text-align: right;">
+            <div class="bp-city-code">{{ boarding_pass.booking.flight.destination }}</div>
+            <div class="bp-city-name">Abuja</div>
+          </div>
+        </div>
+        
+        <div class="bp-grid">
+          <div>
+            <div class="bp-label">Passenger</div>
+            <div class="bp-value">{{ boarding_pass.booking.passenger.get_full_name|default:boarding_pass.booking.passenger.email }}</div>
+          </div>
+          <div>
+            <div class="bp-label">Date</div>
+            <div class="bp-value">{{ boarding_pass.booking.flight.departure_date|date:"d M Y" }}</div>
+          </div>
+          
+          <div>
+            <div class="bp-label">Boarding Time</div>
+            <div class="bp-value-large text-sky">{{ boarding_pass.boarding_time|time:"H:i" }}</div>
+          </div>
+          <div>
+            <div class="bp-label">Gate</div>
+            <div class="bp-value-large">{{ boarding_pass.gate }}</div>
+          </div>
+          
+          <div>
+            <div class="bp-label">Seat</div>
+            <div class="bp-value-large">{{ boarding_pass.booking.seat_number }}</div>
+          </div>
+          <div>
+            <div class="bp-label">Booking Ref</div>
+            <div class="bp-value">{{ boarding_pass.booking.booking_reference }}</div>
+          </div>
+        </div>
+      </div>
+      
+      <div class="bp-footer">
+        <div class="bp-notch left"></div>
+        <div class="bp-notch right"></div>
+        
+        <div class="qr-box">
+          {% if boarding_pass.qr_code_image %}
+            <img src="{% url 'boarding_pass_qr' boarding_pass.id %}" alt="Boarding Pass QR Code" style="width: 160px; height: 160px; display: block;">
+          {% else %}
+            <div style="width: 160px; height: 160px; display: grid; place-items: center; background: #f3f4f6; color: #9ca3af; font-size: 13px;">No QR</div>
+          {% endif %}
+        </div>
+        
+        <div class="subtle" style="font-size: 13px;">Scan this QR code at the gate to board</div>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

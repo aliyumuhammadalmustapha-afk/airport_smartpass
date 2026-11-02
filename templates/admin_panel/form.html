@@ -1,0 +1,49 @@
+{% extends "admin_panel/base.html" %}
+
+{% block title %}{{ title }} | DKA Admin{% endblock %}
+
+{% block admin_content %}
+<div class="row-between mb-5">
+  <div>
+    <div class="eyebrow eyebrow--plain mb-1 text-gold">AIRPORT MANAGEMENT</div>
+    <h1 class="h2 mb-1">{{ title }}</h1>
+    <p class="muted">{{ subtitle }}</p>
+  </div>
+</div>
+
+<div class="surface surface-pad" style="max-width: 600px;">
+  <form method="post" novalidate>
+    {% csrf_token %}
+    {% if form.non_field_errors %}
+      <div class="flash flash--error mb-4">
+        <i data-lucide="alert-circle" class="ico"></i>
+        <div>{{ form.non_field_errors|striptags }}</div>
+      </div>
+    {% endif %}
+
+    {% for field in form %}
+      {% if field.field.widget.input_type == "checkbox" %}
+        <div class="row-flex mb-4">
+          {{ field }}
+          <label class="form-label" for="{{ field.id_for_label }}" style="margin:0;">{{ field.label }}</label>
+          {% for error in field.errors %}<div class="field-errors">{{ error }}</div>{% endfor %}
+        </div>
+      {% else %}
+        <div class="field mb-4 {% if field.errors %}has-error{% endif %}">
+          <label class="form-label" for="{{ field.id_for_label }}">{{ field.label }}</label>
+          {{ field }}
+          {% if field.help_text %}<p class="field-help">{{ field.help_text }}</p>{% endif %}
+          {% if field.name == "total_seats" %}<p class="field-help">The available seat count will be adjusted around confirmed bookings.</p>{% endif %}
+          {% if field.name == "password1" %}<p class="field-help">Use a strong temporary password. Django stores it as a one-way hash.</p>{% endif %}
+          {% for error in field.errors %}<p class="field-errors">{{ error }}</p>{% endfor %}
+        </div>
+      {% endif %}
+    {% endfor %}
+
+    <div class="row-flex mt-5 pt-3" style="border-top: 1px solid var(--line);">
+      <button class="btn btn-ink" type="submit">Save changes</button>
+      <a class="btn btn-outline" href="{% url cancel_url %}">Cancel</a>
+    </div>
+  </form>
+</div>
+{% endblock %}

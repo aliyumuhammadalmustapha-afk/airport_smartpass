@@ -1,0 +1,85 @@
+{% extends "base.html" %}
+
+{% block title %}My Scan History | DKA Digital{% endblock %}
+{% block body_class %}gate-history-body{% endblock %}
+
+{% block content %}
+<div class="wrap wrap--narrow page-head reveal">
+    <div class="row-between mb-4">
+        <div>
+            <div class="eyebrow mb-1">GATE STAFF WORKSPACE</div>
+            <h1 class="h1 mb-2">My scan history.</h1>
+            <p class="lead-text">Review boarding pass scans recorded under your staff account.</p>
+        </div>
+        <a class="btn btn-ink" href="{% url 'gate_scanner' %}">
+            <i data-lucide="scan" class="ico"></i> Open Scanner
+        </a>
+    </div>
+</div>
+
+<div class="wrap wrap--narrow reveal reveal-d1 pb-5 mb-5">
+    <div class="mb-5" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 16px;">
+        <div class="surface surface-pad">
+            <div class="label-xs mb-2">Total Scans</div>
+            <div class="display mb-1">{{ total_scans }}</div>
+            <div class="subtle">Total codes scanned</div>
+        </div>
+        <div class="surface surface-pad">
+            <div class="label-xs mb-2">Valid</div>
+            <div class="display mb-1 text-ok">{{ valid_scans }}</div>
+            <div class="subtle">Cleared for boarding</div>
+        </div>
+        <div class="surface surface-pad">
+            <div class="label-xs mb-2">Already Used</div>
+            <div class="display mb-1 text-warn">{{ used_scans }}</div>
+            <div class="subtle">Duplicate attempts</div>
+        </div>
+        <div class="surface surface-pad">
+            <div class="label-xs mb-2">Invalid or Expired</div>
+            <div class="display mb-1 text-bad">{{ invalid_scans|add:expired_scans }}</div>
+            <div class="subtle">Rejected by system</div>
+        </div>
+    </div>
+
+    {% if logs %}
+        <div class="table-wrap">
+            <table class="dtable">
+                <thead><tr><th>Scanned at WAT</th><th>Result</th><th>Passenger</th><th>Flight</th><th>Notes</th></tr></thead>
+                <tbody>
+                    {% for log in logs %}
+                        <tr>
+                            <td class="mono text-nowrap">{{ log.scanned_at|date:"d M Y, H:i" }}</td>
+                            <td>
+                                {% if log.result == "VALID" %}<span class="chip chip-ok">VALID</span>
+                                {% elif log.result == "ALREADY_USED" %}<span class="chip chip-warn">ALREADY USED</span>
+                                {% elif log.result == "EXPIRED" %}<span class="chip chip-bad">EXPIRED</span>
+                                {% else %}<span class="chip chip-bad">INVALID</span>{% endif %}
+                            </td>
+                            <td>{% if log.boarding_pass %}{{ log.boarding_pass.passenger_name }}{% else %}<span class="subtle">No match</span>{% endif %}</td>
+                            <td class="mono">{% if log.boarding_pass %}{{ log.boarding_pass.flight_number }}{% else %}<span class="subtle">-</span>{% endif %}</td>
+                            <td class="subtle">{{ log.notes|default:"Scan recorded"|truncatechars:72 }}</td>
+                        </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    {% else %}
+        <div class="empty">
+            <div class="empty__icon"><i data-lucide="history" class="ico"></i></div>
+            <h3 class="h3 mb-2">No scans recorded yet</h3>
+            <p class="muted mb-4">Your gate scans will appear here after you verify a boarding pass.</p>
+            <a class="btn btn-ink" href="{% url 'gate_scanner' %}">Open Gate Scanner</a>
+        </div>
+    {% endif %}
+
+    <div class="surface surface-pad mt-5" style="background: var(--sky-tint); border-color: var(--sky-300);">
+        <h3 class="h4 mb-2 text-sky">Staff Guidelines</h3>
+        <ul class="muted" style="margin: 0; padding-left: 20px; font-size: 14.5px;">
+            <li class="mb-1"><strong>Valid:</strong> Passenger is cleared for boarding. Direct them to the jet bridge.</li>
+            <li class="mb-1"><strong>Already Used:</strong> This pass was already scanned. Verify passenger identity and check for duplicates.</li>
+            <li class="mb-1"><strong>Invalid:</strong> Pass belongs to a different flight, is not checked in, or the code is fake.</li>
+            <li><strong>Expired:</strong> Pass is for a past date. Direct passenger to the ticketing counter.</li>
+        </ul>
+    </div>
+</div>
+{% endblock %}

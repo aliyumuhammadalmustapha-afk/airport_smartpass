@@ -1,0 +1,128 @@
+{% extends "admin_panel/base.html" %}
+
+{% block title %}{{ title }} | DKA Admin{% endblock %}
+
+{% block admin_content %}
+<div class="row-between mb-5">
+  <div>
+    <div class="eyebrow eyebrow--plain mb-1 text-gold">AIRPORT MANAGEMENT</div>
+    <h1 class="h2 mb-1">{{ title }}</h1>
+    <p class="muted">{{ subtitle }}</p>
+  </div>
+  {% if add_url %}<a class="btn btn-ink" href="{% url add_url %}">+ Add {{ add_label }}</a>{% endif %}
+</div>
+
+{% if list_type == "flights" or list_type == "staff" or list_type == "bookings" or list_type == "airlines" %}
+<div class="surface surface-pad mb-4">
+  <form method="get" class="row-flex">
+    <div class="field m-0" style="flex: 1;">
+      <label class="sr-only" for="admin-search">Search {{ title }}</label>
+      <input id="admin-search" class="input" type="search" name="q" value="{{ query }}" placeholder="Search {{ title|lower }}">
+    </div>
+    <button class="btn btn-ink" type="submit">Search</button>
+    {% if query %}<a class="btn btn-outline" href="{% url request.resolver_match.url_name %}">Clear</a>{% endif %}
+  </form>
+</div>
+{% endif %}
+
+{% if list_type == "logs" %}
+<div class="surface surface-pad mb-4">
+  <form method="get" class="row-flex">
+    <div class="field m-0">
+      <label class="form-label" for="filter-result">Result</label>
+      <select class="input" id="filter-result" name="result"><option value="">All results</option>{% for value,label in result_choices %}<option value="{{ value }}" {% if result_filter == value %}selected{% endif %}>{{ label }}</option>{% endfor %}</select>
+    </div>
+    <div class="field m-0">
+      <label class="form-label" for="filter-staff">Staff</label>
+      <select class="input" id="filter-staff" name="staff"><option value="">All staff</option>{% for person in staff_options %}<option value="{{ person.id }}" {% if staff_filter == person.id|stringformat:"s" %}selected{% endif %}>{{ person.get_full_name|default:person.email }}</option>{% endfor %}</select>
+    </div>
+    <div class="field m-0">
+      <label class="form-label" for="filter-date">Scan date</label>
+      <input class="input" id="filter-date" type="date" name="date" value="{{ date_filter }}">
+    </div>
+    <div class="field m-0" style="justify-content: flex-end;">
+      <div class="row-flex">
+        <button class="btn btn-ink" type="submit">Filter</button>
+        <a class="btn btn-outline" href="{% url 'admin_panel_logs' %}">Clear</a>
+      </div>
+    </div>
+  </form>
+</div>
+{% endif %}
+
+<div class="surface">
+  {% if rows %}
+  <div class="table-wrap" style="border:none; box-shadow:none; border-radius:var(--r-lg);">
+    <table class="dtable w-100">
+      <thead><tr>
+        {% if list_type == "flights" %}<th>Flight</th><th>Airline</th><th>Route</th><th>Departure WAT</th><th>Seats</th><th>Status</th><th>Actions</th>
+        {% elif list_type == "airlines" %}<th>Airline</th><th>Code</th><th>Flights</th><th>Actions</th>
+        {% elif list_type == "staff" %}<th>Staff member</th><th>Email</th><th>Phone</th><th>Account</th><th>Actions</th>
+        {% elif list_type == "bookings" %}<th>Reference</th><th>Passenger</th><th>Flight</th><th>Seat</th><th>Booked</th><th>Status</th><th>Actions</th>
+        {% elif list_type == "passes" %}<th>Passenger</th><th>Flight</th><th>Date</th><th>Seat</th><th>Gate</th><th>Check-in</th><th>Gate use</th>
+        {% else %}<th>Scanned at WAT</th><th>Result</th><th>Staff</th><th>Passenger</th><th>Flight</th><th>Notes</th>{% endif %}
+      </tr></thead>
+      <tbody>
+      {% for row in rows %}
+        <tr>
+          {% if list_type == "flights" %}
+            <td class="mono" style="font-weight: 600;">{{ row.flight_number }}</td><td>{{ row.airline.name }}</td><td>{{ row.origin }} &rarr; {{ row.destination }}</td>
+            <td class="mono">{{ row.departure_date|date:"d M Y" }} · {{ row.departure_time|time:"H:i" }}</td><td class="mono">{{ row.available_seats }} / {{ row.total_seats }}</td>
+            <td><span class="chip {% if row.status == 'cancelled' %}chip-bad{% elif row.status == 'boarding' %}chip-warn{% elif row.status == 'departed' %}chip-subtle{% else %}chip-ok{% endif %}">{{ row.get_status_display }}</span></td>
+            <td>
+              <div class="row-flex" style="gap:6px;">
+                <a class="btn btn-outline btn-sm" href="{% url 'admin_panel_flight_edit' row.id %}">Edit</a>
+                {% if row.status != 'cancelled' and row.status != 'departed' %}
+                  <a class="btn btn-outline btn-sm" href="{% url 'admin_panel_flight_cancel' row.id %}">Cancel</a>
+                {% endif %}
+                <a class="btn btn-danger-outline btn-sm" href="{% url 'admin_panel_flight_delete' row.id %}">Delete</a>
+              </div>
+            </td>
+          {% elif list_type == "airlines" %}
+            <td style="font-weight: 600;">{{ row.name }}</td><td class="mono">{{ row.code }}</td><td class="mono">{{ row.flight_count }}</td>
+            <td>
+              <div class="row-flex" style="gap:6px;">
+                <a class="btn btn-outline btn-sm" href="{% url 'admin_panel_airline_edit' row.id %}">Edit</a>
+                <a class="btn btn-danger-outline btn-sm" href="{% url 'admin_panel_airline_delete' row.id %}">Delete</a>
+              </div>
+            </td>
+          {% elif list_type == "staff" %}
+            <td style="font-weight: 600;">{{ row.get_full_name|default:"Name not set" }}</td><td>{{ row.email }}</td><td class="mono">{{ row.phone_number|default:"Not provided" }}</td>
+            <td>{% if row.is_active %}<span class="chip chip-ok">Active</span>{% else %}<span class="chip chip-bad">Inactive</span>{% endif %}</td>
+            <td>
+              <div class="row-flex" style="gap:6px;">
+                <a class="btn btn-outline btn-sm" href="{% url 'admin_panel_staff_edit' row.id %}">Edit</a>
+                <form method="post" action="{% url 'admin_panel_staff_toggle_active' row.id %}" style="margin:0;">{% csrf_token %}<button class="btn btn-outline btn-sm" type="submit">{% if row.is_active %}Deactivate{% else %}Activate{% endif %}</button></form>
+                <a class="btn btn-danger-outline btn-sm" href="{% url 'admin_panel_staff_delete' row.id %}">Delete</a>
+              </div>
+            </td>
+          {% elif list_type == "bookings" %}
+            <td class="mono" style="font-weight: 600;">{{ row.booking_reference }}</td><td>{{ row.passenger.get_full_name|default:row.passenger.email }}<div class="subtle" style="font-size:12px;">{{ row.passenger.email }}</div></td>
+            <td class="mono">{{ row.flight.flight_number }}<div class="subtle" style="font-size:12px;">{{ row.flight.departure_date|date:"d M Y" }}</div></td><td class="mono">{{ row.seat_number }}</td><td class="mono" style="font-size:12.5px;">{{ row.booking_date|date:"d M, H:i" }}</td>
+            <td>{% if row.booking_status == 'confirmed' %}<span class="chip chip-ok">Confirmed</span>{% else %}<span class="chip chip-bad">Cancelled</span>{% endif %}</td>
+            <td>{% if row.booking_status == 'confirmed' %}<a class="btn btn-outline btn-sm" href="{% url 'admin_panel_booking_cancel' row.id %}">Cancel</a>{% else %}<span class="subtle">No actions</span>{% endif %}</td>
+          {% elif list_type == "passes" %}
+            <td>{{ row.passenger_name }}</td><td class="mono">{{ row.flight_number }}</td><td class="mono">{{ row.departure_date|date:"d M Y" }}</td><td class="mono">{{ row.seat_number }}</td><td class="mono">{{ row.gate }}</td>
+            <td>{% if row.is_checked_in %}<span class="chip chip-sky">Checked in</span>{% else %}<span class="chip chip-warn">Pending</span>{% endif %}</td>
+            <td>{% if row.is_used %}<span class="chip chip-warn">Used</span>{% else %}<span class="chip chip-ok">Unused</span>{% endif %}</td>
+          {% else %}
+            <td class="mono text-nowrap">{{ row.scanned_at|date:"d M Y, H:i" }}</td><td><span class="chip {% if row.result == 'VALID' %}chip-ok{% elif row.result == 'ALREADY_USED' %}chip-warn{% else %}chip-bad{% endif %}">{{ row.get_result_display }}</span></td>
+            <td>{{ row.scanned_by.get_full_name|default:row.scanned_by.email|default:"Unknown" }}</td>
+            <td>{% if row.boarding_pass %}{{ row.boarding_pass.passenger_name }}{% else %}<span class="subtle">No match</span>{% endif %}</td>
+            <td class="mono">{% if row.boarding_pass %}{{ row.boarding_pass.flight_number }}{% else %}<span class="subtle">-</span>{% endif %}</td><td class="subtle">{{ row.notes|default:"Scan recorded"|truncatechars:72 }}</td>
+          {% endif %}
+        </tr>
+      {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  {% else %}
+  <div class="empty">
+    <div class="empty__icon"><i data-lucide="inbox" class="ico"></i></div>
+    <h3 class="h3 mb-2">No {{ title|lower }} found</h3>
+    <p class="muted mb-4">There are no records matching this view yet.</p>
+    {% if add_url %}<a class="btn btn-ink" href="{% url add_url %}">Add {{ add_label }}</a>{% endif %}
+  </div>
+  {% endif %}
+</div>
+{% endblock %}

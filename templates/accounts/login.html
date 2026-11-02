@@ -1,0 +1,101 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}Sign In | DKA Digital{% endblock %}
+
+{% block navbar %}{% endblock %}
+{% block footer %}{% endblock %}
+
+{% block content %}
+<style>
+  .split { display: flex; min-height: 100vh; }
+  .split__left {
+    display: none; width: 45%;
+    background: var(--ink-950) url('{% static "img/hero-dusk.jpg" %}') no-repeat center / cover;
+    position: relative;
+    padding: 64px; color: #fff;
+    flex-direction: column; justify-content: space-between;
+  }
+  .split__left::before {
+    content: ""; position: absolute; inset: 0; background: rgba(11, 18, 32, 0.7);
+  }
+  .split__right {
+    flex: 1; display: flex; flex-direction: column; justify-content: center;
+    padding: 32px; background: var(--ivory-50);
+  }
+  @media (min-width: 992px) { .split__left { display: flex; } .split__right { padding: 64px; } }
+  .split__content { position: relative; z-index: 10; }
+  .auth-box { max-width: 400px; margin: 0 auto; width: 100%; }
+</style>
+
+<div class="split">
+  <div class="split__left">
+    <div class="split__content reveal">
+      <a href="{% url 'home' %}" class="brand" style="color: #fff;">
+        <div class="brand__mark"><i data-lucide="plane" class="ico"></i></div>
+        <div class="brand__text"><span class="brand__name">DKA</span><span class="brand__sub">Katsina Airport</span></div>
+      </a>
+    </div>
+    <div class="split__content reveal reveal-d1">
+      <h1 class="display mb-4">Your gate is waiting.</h1>
+      <div class="stack">
+        <div class="row-flex"><i data-lucide="check-circle" class="ico text-gold"></i> Check in before you leave home.</div>
+        <div class="row-flex"><i data-lucide="check-circle" class="ico text-gold"></i> Your boarding pass, on your phone.</div>
+        <div class="row-flex"><i data-lucide="check-circle" class="ico text-gold"></i> Verified in under 3 seconds at the gate.</div>
+      </div>
+    </div>
+    <div class="split__content subtle reveal reveal-d2">
+      Serving Max Air and Rano Air on the Katsina to Abuja route.
+    </div>
+  </div>
+  
+  <div class="split__right">
+    <div class="auth-box reveal reveal-d1">
+      <a class="link-arrow subtle mb-5" href="{% url 'home' %}"><i data-lucide="arrow-left" class="ico"></i> Back to home</a>
+      
+      <h2 class="h2 mb-2">Welcome back.</h2>
+      <p class="muted mb-4">Sign in to your DKA Digital account.</p>
+
+      {% if form.non_field_errors %}
+        <div class="flash flash--error mb-4">
+          <i data-lucide="alert-circle" class="ico"></i>
+          <div>{{ form.non_field_errors|striptags }}</div>
+        </div>
+      {% endif %}
+
+      <form method="post" novalidate>
+        {% csrf_token %}
+        <input type="hidden" name="next" value="{{ next }}">
+
+        <div class="field mb-3 {% if form.username.errors %}has-error{% endif %}">
+          <label class="form-label" for="id_username">Email Address</label>
+          <input type="email" id="id_username" name="username" class="input" placeholder="name@example.com" value="{{ form.username.value|default:'' }}" required>
+          {% if form.username.errors %}<p class="field-errors">{{ form.username.errors.0 }}</p>{% endif %}
+        </div>
+
+        <div class="field mb-4 {% if form.password.errors %}has-error{% endif %}">
+          <div class="row-between mb-1" style="margin-bottom: 0;">
+            <label class="form-label mb-0" for="id_password">Password</label>
+          </div>
+          <input type="password" id="id_password" name="password" class="input" placeholder="••••••••" required>
+          {% if form.password.errors %}<p class="field-errors">{{ form.password.errors.0 }}</p>{% endif %}
+        </div>
+
+        <button class="btn btn-ink w-100" type="submit">Sign In</button>
+      </form>
+
+      <div class="text-center mt-4 mb-4">
+        <span class="muted">No account yet? </span>
+        <a href="{% url 'register' %}">Create one here</a>
+      </div>
+
+      <div class="divider"></div>
+
+      <div class="text-center">
+        <span class="muted">Airport staff? </span>
+        <a class="subtle" href="{% url 'gate_login' %}">Gate staff login</a>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

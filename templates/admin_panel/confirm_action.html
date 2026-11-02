@@ -1,0 +1,29 @@
+{% extends "admin_panel/base.html" %}
+
+{% block title %}{{ title }} | DKA Admin{% endblock %}
+
+{% block admin_content %}
+<div class="row-between mb-5">
+  <div>
+    <div class="eyebrow eyebrow--plain mb-1 text-warn">ACTION REQUIRED</div>
+    <h1 class="h2 mb-1">{{ title }}</h1>
+    <p class="muted">Confirm the action before applying it to the airport records.</p>
+  </div>
+</div>
+
+<div class="surface surface-pad" style="max-width: 600px;">
+  <div class="flash flash--warning mb-4" style="padding: 24px;">
+    <i data-lucide="alert-triangle" class="ico ico-xl" style="margin-top: 0;"></i>
+    <div>
+      <h2 class="h4 mb-1">{{ object_label }}</h2>
+      <p class="muted">{{ description }}</p>
+    </div>
+  </div>
+  
+  <form method="post" class="row-flex mt-5 pt-3" style="border-top: 1px solid var(--line);">
+    {% csrf_token %}
+    <button class="btn btn-danger" type="submit">Confirm Action</button>
+    <a class="btn btn-outline" href="{% url cancel_url %}">Go back</a>
+  </form>
+</div>
+{% endblock %}

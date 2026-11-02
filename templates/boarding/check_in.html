@@ -1,0 +1,100 @@
+{% extends "base.html" %}
+
+{% block title %}Online Check-In | DKA Digital Boarding{% endblock %}
+
+{% block content %}
+<div class="wrap wrap--narrow page-head reveal">
+  <div class="breadcrumb-lite">
+    <a href="{% url 'my_bookings' %}">My Bookings</a> / <span>Check-In</span>
+  </div>
+  <div class="eyebrow eyebrow--plain mb-2">PRE-FLIGHT CLEARANCE</div>
+  <h1 class="h1">Online Check-In</h1>
+  <p class="lead-text">Confirm your passenger details for {{ booking.flight.airline.name }} flight {{ booking.flight.flight_number }}. Your secure digital QR boarding pass will be generated upon confirmation.</p>
+</div>
+
+<div class="wrap wrap--narrow reveal reveal-d1 pb-5 mb-5">
+  <div class="surface surface-pad mb-4">
+    <div class="mb-4">
+      <div class="eyebrow eyebrow--plain mb-1">Passenger Manifest Verification</div>
+      <h2 class="h3">Review Travel Details</h2>
+    </div>
+    
+    <div class="grid-2">
+      <div>
+        <div class="label-xs mb-1">Passenger Name</div>
+        <div class="font-sans" style="font-size: 16px; font-weight: 600;">{{ booking.passenger.get_full_name|default:booking.passenger.email }}</div>
+      </div>
+      <div>
+        <div class="label-xs mb-1">Booking Reference</div>
+        <div class="mono" style="font-size: 16px; font-weight: 600; color: var(--gold-500);">{{ booking.booking_reference }}</div>
+      </div>
+      <div>
+        <div class="label-xs mb-1">Flight</div>
+        <div class="mono" style="font-size: 16px; font-weight: 600;">{{ booking.flight.airline.name }} · {{ booking.flight.flight_number }}</div>
+      </div>
+      <div>
+        <div class="label-xs mb-1">Assigned Seat</div>
+        <div class="mono" style="font-size: 20px; font-weight: 700; color: var(--ok-500);">{{ booking.seat_number }}</div>
+      </div>
+      <div>
+        <div class="label-xs mb-1">Route</div>
+        <div class="font-sans" style="font-size: 15px; font-weight: 500;">{{ booking.flight.origin }} (Katsina) ➔ {{ booking.flight.destination }} (Abuja)</div>
+      </div>
+      <div>
+        <div class="label-xs mb-1">Departure Time</div>
+        <div class="mono" style="font-size: 14px; font-weight: 600;">{{ booking.flight.departure_date|date:"D, d M Y" }} · {{ booking.flight.departure_time|time:"H:i" }} WAT</div>
+      </div>
+    </div>
+  </div>
+
+  {% if boarding_pass and boarding_pass.is_checked_in %}
+    <div class="flash flash--success mb-4" style="padding: 24px;">
+      <i data-lucide="check-circle" class="ico ico-xl" style="margin-top: 0;"></i>
+      <div>
+        <h2 class="h4 mb-1">You’re Checked In</h2>
+        <p class="muted">Your digital boarding pass is ready. Boarding is scheduled for {{ boarding_pass.boarding_time|time:"H:i" }} at Gate {{ boarding_pass.gate }}.</p>
+      </div>
+    </div>
+    <div class="row-flex">
+      <a class="btn btn-ink" href="{% url 'boarding_pass_detail' boarding_pass.id %}">View Digital Boarding Pass <i data-lucide="arrow-right" class="ico ico-sm"></i></a>
+      <a class="btn btn-outline" href="{% url 'my_bookings' %}">Back to My Bookings</a>
+    </div>
+
+  {% elif can_check_in %}
+    <div class="flash flash--warning mb-4" style="padding: 24px;">
+      <i data-lucide="alert-triangle" class="ico ico-xl" style="margin-top: 0;"></i>
+      <div>
+        <h2 class="h4 mb-1">Please Verify Your Details</h2>
+        <p class="muted">Once check-in is submitted, your boarding pass QR code will be permanently minted for this seat. This action cannot be undone.</p>
+      </div>
+    </div>
+    <form method="post" class="row-flex mt-4">
+      {% csrf_token %}
+      <button class="btn btn-gold" type="submit">Confirm Check-In & Issue Boarding Pass <i data-lucide="arrow-right" class="ico ico-sm"></i></button>
+      <a class="btn btn-outline" href="{% url 'my_bookings' %}">Back to My Bookings</a>
+    </form>
+
+  {% else %}
+    <div class="flash flash--warning mb-4" style="padding: 24px;">
+      <i data-lucide="clock" class="ico ico-xl" style="margin-top: 0;"></i>
+      <div>
+        <h2 class="h4 mb-1">Check-In Not Currently Open</h2>
+        <p class="muted">
+          {% if booking.booking_status != "confirmed" %}
+            This booking is not confirmed and cannot be checked in.
+          {% elif check_in_window_state == "not_yet_open" %}
+            Online check-in opens 24 hours before departure. It opens {{ check_in_opens_at|date:"D, d M H:i" }} WAT.
+          {% elif check_in_window_state == "closed" %}
+            Online check-in closes 1 hour before departure. This check-in window has closed.
+          {% else %}
+            This flight is not accepting online check-in.
+          {% endif %}
+        </p>
+      </div>
+    </div>
+    <div class="mt-4">
+      <a class="btn btn-outline" href="{% url 'my_bookings' %}">Back to My Bookings</a>
+    </div>
+  {% endif %}
+</div>
+{% endblock %}

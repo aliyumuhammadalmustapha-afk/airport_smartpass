@@ -1,0 +1,112 @@
+{% extends "admin_panel/base.html" %}
+
+{% block title %}Airport Admin Dashboard | DKA Digital{% endblock %}
+
+{% block admin_content %}
+<div class="row-between mb-5">
+  <div>
+    <div class="eyebrow eyebrow--plain mb-1 text-gold">AIRPORT OVERVIEW</div>
+    <h2 class="h2 mb-1">Airport Admin Dashboard</h2>
+    <p class="muted">Good {{ greeting }}, {{ request.user.first_name|default:request.user.email }}. Today is {{ today|date:"l, d F Y" }}.</p>
+  </div>
+  <div class="row-flex">
+    <a class="btn btn-ink" href="{% url 'admin_panel_flight_add' %}">Add flight</a>
+    <a class="btn btn-outline" href="{% url 'admin_panel_staff_add' %}">Add gate staff</a>
+    <a class="btn btn-outline" href="{% url 'admin_panel_logs' %}">View verification logs</a>
+  </div>
+</div>
+
+<div class="grid-2 mb-5">
+  <div class="surface surface-pad">
+    <div class="label-xs mb-2">Flights Today</div>
+    <div class="display mb-1">{{ flights_today }}</div>
+    <div class="subtle">Departures scheduled today</div>
+  </div>
+  <div class="surface surface-pad">
+    <div class="label-xs mb-2">Total Bookings</div>
+    <div class="display mb-1 text-ok">{{ bookings_this_month }}</div>
+    <div class="subtle">Confirmed this month</div>
+  </div>
+  <div class="surface surface-pad">
+    <div class="label-xs mb-2">Passes Issued</div>
+    <div class="display mb-1 text-sky">{{ passes_issued }}</div>
+    <div class="subtle">Digital passes generated</div>
+  </div>
+  <div class="surface surface-pad">
+    <div class="label-xs mb-2">Gate Scans Today</div>
+    <div class="display mb-1 text-gold">{{ valid_scans_today|add:used_scans_today|add:invalid_scans_today|add:expired_scans_today }}</div>
+    <div class="subtle">{{ valid_scans_today }} valid, {{ used_scans_today }} used, {{ invalid_scans_today }} invalid</div>
+  </div>
+</div>
+
+<div class="grid-3">
+  <div class="surface surface-pad" style="grid-column: span 2;">
+    <div class="row-between mb-4">
+      <h3 class="h4">Recent Bookings</h3>
+      <a class="subtle" href="{% url 'admin_panel_bookings' %}">View all &rarr;</a>
+    </div>
+    
+    <div class="table-wrap">
+      <table class="dtable">
+        <thead>
+          <tr>
+            <th>Passenger</th>
+            <th>Flight</th>
+            <th>Route</th>
+            <th>Seat</th>
+            <th>Status</th>
+            <th>Action</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for booking in recent_bookings %}
+          <tr>
+            <td>
+              <div style="font-weight: 600;">{{ booking.passenger.get_full_name|default:booking.passenger.email }}</div>
+              <div class="subtle">{{ booking.booking_reference }}</div>
+            </td>
+            <td class="mono">{{ booking.flight.flight_number }}</td>
+            <td>{{ booking.flight.origin }} &rarr; {{ booking.flight.destination }}</td>
+            <td class="mono">{{ booking.seat_number }}</td>
+            <td>
+              {% if booking.booking_status == 'confirmed' %}
+                <span class="chip chip-ok">Confirmed</span>
+              {% else %}
+                <span class="chip chip-bad">Cancelled</span>
+              {% endif %}
+            </td>
+            <td>
+              <a class="link-arrow" href="{% url 'admin_panel_bookings' %}">View</a>
+            </td>
+          </tr>
+          {% empty %}
+          <tr><td colspan="6" class="text-center subtle py-4">No bookings recorded yet.</td></tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+  
+  <div class="surface surface-pad">
+    <div class="row-between mb-4">
+      <h3 class="h4 row-flex"><span class="pulse-dot"></span> Live Activity</h3>
+      <div class="label-xs">REAL-TIME</div>
+    </div>
+    <div class="stack">
+      {% for item in activity %}
+      <div style="padding-bottom: 12px; border-bottom: 1px solid var(--line);">
+        <div class="row-between mb-1">
+          <strong style="font-size: 14px;">{{ item.title }}</strong>
+          <span class="subtle mono" style="font-size: 12px;">{{ item.at|date:"H:i:s" }} WAT</span>
+        </div>
+        <div class="muted" style="font-size: 13.5px;">{{ item.detail }}</div>
+      </div>
+      {% empty %}
+      <div class="text-center subtle py-4">
+        <p>No recent activity</p>
+      </div>
+      {% endfor %}
+    </div>
+  </div>
+</div>
+{% endblock %}

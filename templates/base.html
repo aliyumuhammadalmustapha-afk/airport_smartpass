@@ -1,0 +1,170 @@
+{% load static %}
+<!doctype html>
+<html lang="en" class="no-js">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="theme-color" content="#0B1220">
+    <title>{% block title %}DKA Digital | Smart Boarding Pass System{% endblock %}</title>
+
+    <!-- Type: Geist (UI), Geist Mono (codes & times), Instrument Serif (accents) -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Outfit:wght@500;600;700&display=swap" rel="stylesheet">
+
+    <!-- Night Departure design system -->
+    <link href="{% static 'css/dka.css' %}?v=2" rel="stylesheet">
+
+    {% block extra_head %}{% endblock %}
+</head>
+<body class="{% block body_class %}{% endblock %}" style="min-height:100vh;display:flex;flex-direction:column;">
+
+    {% block navbar %}
+    <nav class="nav {% block nav_class %}{% endblock %}" data-nav aria-label="Main navigation">
+        <div class="wrap nav__inner">
+            <a class="brand" href="{% url 'home' %}" aria-label="DKA Digital home">
+                <span class="brand__mark"><i data-lucide="plane" class="ico"></i></span>
+                <span class="brand__text">
+                    <span class="brand__name">DKA Digital</span>
+                    <span class="brand__sub">Katsina Airport</span>
+                </span>
+            </a>
+
+            <div class="nav__links">
+                {% with url_name=request.resolver_match.url_name %}
+                {% if user.is_authenticated and user.is_staff and not user.is_superuser %}
+                    <a class="nav__link {% if url_name == 'gate_scanner' %}is-active{% endif %}" href="{% url 'gate_scanner' %}">Gate Scanner</a>
+                    <a class="nav__link" href="{% url 'gate_scanner' %}#today-departures">Departures</a>
+                    <a class="nav__link {% if url_name == 'gate_history' %}is-active{% endif %}" href="{% url 'gate_history' %}">Scan History</a>
+                {% else %}
+                    <a class="nav__link {% if url_name == 'home' %}is-active{% endif %}" href="{% url 'home' %}">Home</a>
+                    <a class="nav__link {% if url_name == 'flight_list' %}is-active{% endif %}" href="{% url 'flight_list' %}">Flights</a>
+                    <a class="nav__link" href="{% url 'home' %}#departures">Departures</a>
+                    <a class="nav__link" href="{% url 'home' %}#how-it-works">How it works</a>
+                    {% if user.is_authenticated and not user.is_staff %}
+                    <a class="nav__link {% if url_name == 'my_bookings' %}is-active{% endif %}" href="{% url 'my_bookings' %}">My Bookings</a>
+                    {% endif %}
+                {% endif %}
+                {% endwith %}
+            </div>
+
+            <div class="nav__actions">
+                {% if user.is_authenticated and user.is_superuser %}
+                    <a class="btn btn-ink btn-sm" href="{% url 'admin_panel' %}"><i data-lucide="layout-dashboard" class="ico"></i><span>Admin Dashboard</span></a>
+                    <form method="post" action="{% url 'logout' %}" style="margin:0">
+                        {% csrf_token %}
+                        <button class="btn btn-ghost btn-sm" type="submit">Log Out</button>
+                    </form>
+                {% elif user.is_authenticated and user.is_staff %}
+                    <span class="nav__user">
+                        <span class="avatar">{{ user.first_name|default:user.email|slice:":1"|upper }}</span>
+                        {{ user.first_name|default:user.email|truncatechars:18 }}
+                    </span>
+                    <a class="btn btn-ink btn-sm" href="{% url 'gate_scanner' %}"><i data-lucide="scan-line" class="ico"></i><span>Gate Scanner</span></a>
+                    <form method="post" action="{% url 'logout' %}" style="margin:0">
+                        {% csrf_token %}
+                        <button class="btn btn-ghost btn-sm" type="submit">Log Out</button>
+                    </form>
+                {% elif user.is_authenticated %}
+                    <span class="nav__user">
+                        <span class="avatar">{{ user.first_name|default:user.email|slice:":1"|upper }}</span>
+                        {{ user.first_name|default:user.email|truncatechars:18 }}
+                    </span>
+                    <form method="post" action="{% url 'logout' %}" style="margin:0">
+                        {% csrf_token %}
+                        <button class="btn btn-ghost btn-sm" type="submit">Log Out</button>
+                    </form>
+                {% else %}
+                    <a class="btn btn-ghost btn-sm" href="{% url 'login' %}">Login</a>
+                    <a class="btn btn-ink btn-sm" href="{% url 'register' %}">Register</a>
+                {% endif %}
+                <button class="btn btn-ghost btn-sm nav__toggle" type="button" data-nav-toggle aria-expanded="false" aria-label="Open menu">
+                    <i data-lucide="menu" class="ico"></i>
+                </button>
+            </div>
+        </div>
+
+        <div class="nav__drawer" data-nav-drawer>
+            {% if user.is_authenticated and user.is_staff and not user.is_superuser %}
+                <a href="{% url 'gate_scanner' %}"><i data-lucide="scan-line" class="ico"></i>Gate Scanner</a>
+                <a href="{% url 'gate_scanner' %}#today-departures"><i data-lucide="monitor" class="ico"></i>Departures</a>
+                <a href="{% url 'gate_history' %}"><i data-lucide="history" class="ico"></i>Scan History</a>
+            {% else %}
+                <a href="{% url 'home' %}"><i data-lucide="home" class="ico"></i>Home</a>
+                <a href="{% url 'flight_list' %}"><i data-lucide="plane-takeoff" class="ico"></i>Flights</a>
+                <a href="{% url 'home' %}#departures"><i data-lucide="monitor" class="ico"></i>Departures</a>
+                <a href="{% url 'home' %}#how-it-works"><i data-lucide="route" class="ico"></i>How it works</a>
+                {% if user.is_authenticated and not user.is_staff %}
+                <a href="{% url 'my_bookings' %}"><i data-lucide="ticket" class="ico"></i>My Bookings</a>
+                {% endif %}
+            {% endif %}
+        </div>
+    </nav>
+    {% endblock %}
+
+    {% block messages %}
+    {% if messages %}
+        <div class="wrap">
+            <div class="flash-stack" role="status" aria-live="polite">
+                {% for message in messages %}
+                    <div class="flash flash--{{ message.tags }}">
+                        {% if message.tags == 'success' %}<i data-lucide="circle-check" class="ico"></i>
+                        {% elif message.tags == 'error' %}<i data-lucide="circle-alert" class="ico"></i>
+                        {% elif message.tags == 'warning' %}<i data-lucide="triangle-alert" class="ico"></i>
+                        {% else %}<i data-lucide="info" class="ico"></i>{% endif %}
+                        <span>{{ message }}</span>
+                        <button class="flash__close" type="button" data-flash-close aria-label="Dismiss"><i data-lucide="x" class="ico ico-sm"></i></button>
+                    </div>
+                {% endfor %}
+            </div>
+        </div>
+    {% endif %}
+    {% endblock %}
+
+    <main style="flex:1 0 auto;">
+        {% block content %}{% endblock %}
+    </main>
+
+    {% block footer %}
+    <footer class="footer">
+        <div class="wrap footer__inner">
+            <div class="footer__grid">
+                <div>
+                    <a class="brand" href="{% url 'home' %}">
+                        <span class="brand__mark"><i data-lucide="plane" class="ico"></i></span>
+                        <span class="brand__text">
+                            <span class="brand__name">DKA Digital</span>
+                            <span class="brand__sub">Katsina Airport</span>
+                        </span>
+                    </a>
+                    <p class="footer__blurb">Smart digital boarding for Umaru Musa Yar'Adua Airport, Katsina. Book, check in and board with a secure QR pass.</p>
+                </div>
+                <div>
+                    <div class="footer__h">Passengers</div>
+                    <ul class="footer__links">
+                        <li><a href="{% url 'flight_list' %}">Find a flight</a></li>
+                        <li><a href="{% url 'login' %}">Passenger login</a></li>
+                        <li><a href="{% url 'register' %}">Create an account</a></li>
+                    </ul>
+                </div>
+                <div>
+                    <div class="footer__h">Airport staff</div>
+                    <ul class="footer__links">
+                        <li><a href="{% url 'gate_login' %}">Gate staff</a></li>
+                        <li><a href="{% url 'admin_panel' %}">Admin panel</a></li>
+                    </ul>
+                </div>
+            </div>
+            <div class="footer__bar">
+                <span>Academic prototype developed at Umaru Musa Yar'Adua University, Katsina.</span>
+                <span class="footer__route">DKA &rarr; ABJ</span>
+            </div>
+        </div>
+    </footer>
+    {% endblock %}
+
+    <script src="https://unpkg.com/lucide@latest/dist/umd/lucide.min.js"></script>
+    <script src="{% static 'js/dka.js' %}"></script>
+    {% block extra_scripts %}{% endblock %}
+</body>
+</html>

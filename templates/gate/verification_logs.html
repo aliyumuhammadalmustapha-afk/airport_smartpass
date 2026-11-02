@@ -1,0 +1,51 @@
+{% extends "base.html" %}
+
+{% block title %}Verification logs | DKA Digital Admin{% endblock %}
+
+{% block content %}
+<div class="wrap wrap--narrow page-head reveal">
+    <div class="row-between mb-4">
+        <div>
+            <div class="eyebrow mb-1">ADMINISTRATOR</div>
+            <h1 class="h1 mb-2">Gate verification logs.</h1>
+            <p class="lead-text">Recorded QR scans, newest first.</p>
+        </div>
+        <a class="btn btn-outline" href="{% url 'admin_panel' %}">Open Admin Panel</a>
+    </div>
+</div>
+
+<div class="wrap reveal reveal-d1 pb-5 mb-5">
+    {% if logs %}
+    <div class="table-wrap">
+        <table class="dtable">
+            <thead><tr>
+                <th>Scanned at</th><th>Result</th><th>Scanned by</th>
+                <th>Passenger</th><th>Flight</th><th>Scanned QR code</th>
+            </tr></thead>
+            <tbody>
+            {% for log in logs %}
+                <tr>
+                    <td class="mono text-nowrap">{{ log.scanned_at|date:"d M Y, H:i" }}</td>
+                    <td>
+                        {% if log.result == "VALID" %}<span class="chip chip-ok">VALID</span>
+                        {% elif log.result == "ALREADY_USED" %}<span class="chip chip-warn">ALREADY USED</span>
+                        {% else %}<span class="chip chip-bad">INVALID</span>{% endif %}
+                    </td>
+                    <td>{{ log.scanned_by.email|default:"Unknown" }}</td>
+                    <td>{% if log.boarding_pass %}{{ log.boarding_pass.passenger_name }}{% else %}<span class="subtle">No match</span>{% endif %}</td>
+                    <td class="mono">{% if log.boarding_pass %}{{ log.boarding_pass.flight_number }}{% else %}<span class="subtle">-</span>{% endif %}</td>
+                    <td><span class="mono subtle" style="font-size: 11px; word-break: break-all;">{{ log.scanned_code|default:"-" }}</span></td>
+                </tr>
+            {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    {% else %}
+        <div class="empty wrap--narrow" style="margin: 0 auto;">
+            <div class="empty__icon"><i data-lucide="history" class="ico"></i></div>
+            <h3 class="h3 mb-2">No verification scans recorded</h3>
+            <p class="muted mb-0">Scans will appear here after staff use the gate scanner.</p>
+        </div>
+    {% endif %}
+</div>
+{% endblock %}
