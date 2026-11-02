@@ -197,16 +197,13 @@ async function startCamera() {
   const onSuccess = (text) => handleScanSuccess(text);
   const onFailure = () => {};
   try {
-    const cameras = await QrConstructor.getCameras().catch(() => []);
-    const rearCamera = cameras.find((item) => /back|rear|environment/i.test(item.label));
-    const candidates = [
-      ...(rearCamera ? [rearCamera.id] : []),
-      ...cameras.filter((item) => !rearCamera || item.id !== rearCamera.id).map((item) => item.id),
-      { facingMode: "environment" },
-      { facingMode: "user" },
-    ];
+    // Try the usual rear camera immediately; device enumeration can be slow and
+    // labels are often blank until the user has granted permission.
+    let cameras = [];
+    const candidates = [{ facingMode: "environment" }];
     let lastError;
-    for (const camera of candidates) {
+    for (let index = 0; index < candidates.length; index++) {
+      const camera = candidates[index];
       try {
         await scanner.start(camera, config, onSuccess, onFailure);
         active = true;
@@ -216,6 +213,28 @@ async function startCamera() {
       } catch (error) {
         lastError = error;
         // Some browsers leave a partially initialized scanner after a failed start.
+        try { await scanner.clear(); } catch (clearError) {}
+        scanner = new QrConstructor("qr-reader");
+      }
+    }
+    // If the preferred constraint fails, enumerate cameras and try each id. Use
+    // the front camera as the final fallback for devices that cannot report ids.
+    cameras = await QrConstructor.getCameras().catch(() => []);
+    const rearCamera = cameras.find((item) => /back|rear|environment/i.test(item.label));
+    const fallbackCameras = [
+      ...(rearCamera ? [rearCamera] : []),
+      ...cameras.filter((item) => !rearCamera || item.id !== rearCamera.id),
+      { id: null, facingMode: "user" },
+    ];
+    for (const camera of fallbackCameras) {
+      try {
+        await scanner.start(camera.id || { facingMode: camera.facingMode }, config, onSuccess, onFailure);
+        active = true;
+        if (stop) stop.disabled = false;
+        status.textContent = "Camera active. Scan a boarding pass QR code.";
+        return;
+      } catch (error) {
+        lastError = error;
         try { await scanner.clear(); } catch (clearError) {}
         scanner = new QrConstructor("qr-reader");
       }
@@ -250,13 +269,25 @@ async function scanUploadedFile(file, QrConstructor) {
   const tempId = `qr-file-scan-${Date.now()}`;
   const container = document.createElement("div");
   container.id = tempId;
-  container.style.display = "none";
+  Object.assign(container.style, {
+    position: "fixed",
+    left: "-10000px",
+    top: "0",
+    width: "640px",
+    height: "480px",
+    overflow: "hidden",
+    opacity: "0",
+    pointerEvents: "none",
+  });
   document.body.appendChild(container);
-  const fileScanner = new QrConstructor(tempId);
+  let fileScanner;
   try {
-    return await fileScanner.scanFile(file, true);
+    fileScanner = new QrConstructor(tempId);
+    return await fileScanner.scanFile(file, false);
   } finally {
-    try { await fileScanner.clear(); } catch (error) {}
+    if (fileScanner) {
+      try { await fileScanner.clear(); } catch (error) {}
+    }
     container.remove();
   }
 }
@@ -267,12 +298,12 @@ async function extractQrFromPdf(file) {
   }
   const arrayBuffer = await file.arrayBuffer();
   const pdfDoc = await window.pdfjsLib.getDocument({ data: arrayBuffer }).promise;
-  const numPages = Math.min(pdfDoc.numPages, 3);
+  const numPages = pdfDoc.numPages;
 
   for (let pageNum = 1; pageNum <= numPages; pageNum++) {
     status.textContent = `Reading PDF page ${pageNum} of ${numPages}...`;
     const page = await pdfDoc.getPage(pageNum);
-    const viewport = page.getViewport({ scale: 2.2 });
+    const viewport = page.getViewport({ scale: 3 });
     const canvas = document.createElement("canvas");
     canvas.width = viewport.width;
     canvas.height = viewport.height;
@@ -286,7 +317,8 @@ async function extractQrFromPdf(file) {
         const decoded = await scanUploadedFile(pageFile, getHtml5QrcodeConstructor());
         if (decoded) return decoded;
       } catch (scanErr) {
-        // Continue searching next page if not on this page
+        if (pageNum === numPages) throw scanErr;
+        // Continue searching subsequent pages if this page has no QR.
       }
     }
   }
