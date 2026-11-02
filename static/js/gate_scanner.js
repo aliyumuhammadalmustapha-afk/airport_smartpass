@@ -9,6 +9,8 @@ const status = el("scanner-status");
 const scanCountKey = "dkaGateScans";
 let scanner;
 let active = false;
+let starting = false;
+let fileScanInProgress = false;
 let captured = false;
 let resetTimer;
 let scans = Number.parseInt(sessionStorage.getItem(scanCountKey), 10) || 0;
@@ -155,14 +157,7 @@ async function handleScanSuccess(code) {
   if (captured) return;
   captured = true;
   countScan();
-  try {
-    if (scanner && active) {
-      await scanner.stop();
-    }
-  } catch (e) {
-    // stop silently
-  }
-  active = false;
+  await stopCamera(false);
   if (stop) stop.disabled = true;
   if (start) start.disabled = false;
   status.textContent = "Verifying boarding pass...";
@@ -181,13 +176,15 @@ async function handleScanSuccess(code) {
 }
 
 async function startCamera() {
-  if (active) return;
+  if (active || starting || fileScanInProgress) return;
+  starting = true;
   if (start) start.disabled = true;
   status.textContent = "Starting camera...";
   captured = false;
 
   const QrConstructor = getHtml5QrcodeConstructor();
   if (!QrConstructor) {
+    starting = false;
     active = false;
     if (start) start.disabled = false;
     if (stop) stop.disabled = true;
@@ -195,44 +192,72 @@ async function startCamera() {
     return;
   }
 
-  scanner = scanner || new QrConstructor("qr-reader");
+  if (!scanner) scanner = new QrConstructor("qr-reader");
   const config = { fps: 10, qrbox: { width: 250, height: 250 } };
-
+  const onSuccess = (text) => handleScanSuccess(text);
+  const onFailure = () => {};
   try {
-    // Attempt 1: Start rear/environment camera directly
-    await scanner.start({ facingMode: "environment" }, config, handleScanSuccess, () => {});
-    active = true;
-    if (stop) stop.disabled = false;
-    status.textContent = "Camera active. Scan a boarding pass QR code.";
-  } catch (err1) {
-    try {
-      // Attempt 2: Try enumerating available cameras
-      const cameras = await QrConstructor.getCameras();
-      if (cameras && cameras.length > 0) {
-        const cam = cameras.find((item) => /back|rear|environment/i.test(item.label)) || cameras[0];
-        await scanner.start(cam.id, config, handleScanSuccess, () => {});
+    const cameras = await QrConstructor.getCameras().catch(() => []);
+    const rearCamera = cameras.find((item) => /back|rear|environment/i.test(item.label));
+    const candidates = [
+      ...(rearCamera ? [rearCamera.id] : []),
+      ...cameras.filter((item) => !rearCamera || item.id !== rearCamera.id).map((item) => item.id),
+      { facingMode: "environment" },
+      { facingMode: "user" },
+    ];
+    let lastError;
+    for (const camera of candidates) {
+      try {
+        await scanner.start(camera, config, onSuccess, onFailure);
         active = true;
         if (stop) stop.disabled = false;
         status.textContent = "Camera active. Scan a boarding pass QR code.";
-      } else {
-        // Attempt 3: User/front camera constraint
-        await scanner.start({ facingMode: "user" }, config, handleScanSuccess, () => {});
-        active = true;
-        if (stop) stop.disabled = false;
-        status.textContent = "Camera active. Scan a boarding pass QR code.";
-      }
-    } catch (finalErr) {
-      active = false;
-      if (start) start.disabled = false;
-      if (stop) stop.disabled = true;
-
-      const isSecure = window.isSecureContext || location.hostname === "localhost" || location.hostname === "127.0.0.1";
-      if (!isSecure) {
-        status.innerHTML = `<span style="color:#DC2626;">Camera requires HTTPS or localhost.</span> Use 'Scan Image / PDF' to upload boarding pass.`;
-      } else {
-        status.textContent = "Could not start camera: " + (finalErr.message || "Permission denied or no webcam available.");
+        return;
+      } catch (error) {
+        lastError = error;
+        // Some browsers leave a partially initialized scanner after a failed start.
+        try { await scanner.clear(); } catch (clearError) {}
+        scanner = new QrConstructor("qr-reader");
       }
     }
+    const isSecure = window.isSecureContext || location.hostname === "localhost" || location.hostname === "127.0.0.1";
+    if (!isSecure) {
+      status.innerHTML = `<span style="color:#DC2626;">Camera requires HTTPS or localhost.</span> Use 'Scan Image / PDF' to upload boarding pass.`;
+    } else {
+      status.textContent = "Could not start camera: " + (lastError?.message || "Permission denied or no webcam available.");
+    }
+  } finally {
+    starting = false;
+    if (!active) {
+      if (start) start.disabled = false;
+      if (stop) stop.disabled = true;
+    }
+  }
+}
+
+async function stopCamera(showStatus = true) {
+  if (scanner && active) {
+    try { await scanner.stop(); } catch (error) {}
+    try { await scanner.clear(); } catch (error) {}
+  }
+  active = false;
+  if (start) start.disabled = false;
+  if (stop) stop.disabled = true;
+  if (showStatus && status) status.textContent = "Camera stopped.";
+}
+
+async function scanUploadedFile(file, QrConstructor) {
+  const tempId = `qr-file-scan-${Date.now()}`;
+  const container = document.createElement("div");
+  container.id = tempId;
+  container.style.display = "none";
+  document.body.appendChild(container);
+  const fileScanner = new QrConstructor(tempId);
+  try {
+    return await fileScanner.scanFile(file, true);
+  } finally {
+    try { await fileScanner.clear(); } catch (error) {}
+    container.remove();
   }
 }
 
@@ -257,7 +282,8 @@ async function extractQrFromPdf(file) {
     const blob = await new Promise((resolve) => canvas.toBlob(resolve, "image/png"));
     if (blob) {
       try {
-        const decoded = await scanner.scanFile(blob, true);
+        const pageFile = new File([blob], `boarding-pass-page-${pageNum}.png`, { type: "image/png" });
+        const decoded = await scanUploadedFile(pageFile, getHtml5QrcodeConstructor());
         if (decoded) return decoded;
       } catch (scanErr) {
         // Continue searching next page if not on this page
@@ -278,7 +304,9 @@ if (fileInput) {
       alert("Scanner library is still loading. Please wait a moment.");
       return;
     }
-    scanner = scanner || new QrConstructor("qr-reader");
+    window.clearTimeout(resetTimer);
+    fileScanInProgress = true;
+    if (active) await stopCamera(false);
 
     const isPdf = file.type === "application/pdf" || file.name.toLowerCase().endsWith(".pdf");
     status.textContent = isPdf ? "Processing PDF document..." : "Scanning uploaded image...";
@@ -288,7 +316,7 @@ if (fileInput) {
       if (isPdf) {
         decodedText = await extractQrFromPdf(file);
       } else {
-        decodedText = await scanner.scanFile(file, true);
+        decodedText = await scanUploadedFile(file, QrConstructor);
       }
       countScan();
       status.textContent = "Verifying pass...";
@@ -302,6 +330,8 @@ if (fileInput) {
       status.textContent = isPdf ? "Failed to decode PDF QR." : "Failed to detect QR in image.";
     }
     fileInput.value = "";
+    fileScanInProgress = false;
+    if (start) start.disabled = false;
   });
 }
 
@@ -312,14 +342,6 @@ if (start) start.addEventListener("click", startCamera);
 if (stop) {
   stop.addEventListener("click", async () => {
     window.clearTimeout(resetTimer);
-    if (scanner && active) {
-      try {
-        await scanner.stop();
-      } catch (e) {}
-    }
-    active = false;
-    if (start) start.disabled = false;
-    stop.disabled = true;
-    status.textContent = "Camera stopped.";
+    await stopCamera();
   });
 }
