@@ -5,7 +5,7 @@
 1. Push this folder to a private GitHub repository and connect that repository to Render as a Blueprint using `render.yaml`.
 2. Render creates a web service and Postgres database. The free Postgres plan expires after 30 days; choose a paid database before this becomes the owner's live system.
 3. The blueprint turns off Django debug mode, generates a secret key, collects static files, and applies migrations during each build.
-4. Create the owner administrator on the deployed service using the Render Shell: `python manage.py createsuperuser`. Use the same email address as the current admin if the owner should keep that login identity, and set a new password. The clean production database does not carry over the local password or other test records.
+4. Create the owner administrator in the production database. Free Render web services do not provide Shell access, so use the database's External Database URL from your computer: set `DJANGO_DEBUG=false`, `SECRET_KEY` (copy the generated value from the Render web service environment), and `DATABASE_URL` (the database's External Database URL) in the local PowerShell session, then run `venv\Scripts\python.exe manage.py createsuperuser`. Use the same email address as the current admin if the owner should keep that login identity, and set a new password. Do not share the database URL or secret key. The clean production database does not carry over the local password or other test records.
 5. If the owner needs gate staff access, create a separate user and grant `is_staff`; do not share the superuser login with gate staff.
 
 ## Files and data
