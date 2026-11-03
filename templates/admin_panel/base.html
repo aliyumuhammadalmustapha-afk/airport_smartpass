@@ -24,6 +24,8 @@
   .admin-content-area { flex: 1; display: flex; flex-direction: column; overflow-y: auto; position: relative; }
   .admin-topbar { position: sticky; top: 0; z-index: 10; background: rgba(247, 245, 240, 0.85); backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px); border-bottom: 1px solid var(--line); padding: 16px 40px; display: flex; justify-content: space-between; align-items: center; }
   .admin-main { padding: 40px; max-width: 1200px; margin: 0 auto; width: 100%; }
+  .admin-sidebar-backdrop { display: none; }
+  .admin-menu-toggle { display: none; }
 </style>
 
 <div class="admin-shell">
@@ -75,6 +77,9 @@
   <!-- Content Area -->
   <div class="admin-content-area">
     <header class="admin-topbar">
+      <button class="btn btn-outline btn-sm admin-menu-toggle" type="button" data-admin-menu-toggle aria-expanded="false" aria-controls="admin-sidebar" aria-label="Open admin menu">
+        <i data-lucide="menu" class="ico"></i><span>Menu</span>
+      </button>
       <div>
         <div class="label-xs mb-1">Admin / {{ title|default:"Dashboard" }}</div>
       </div>
@@ -99,5 +104,30 @@
       {% block admin_content %}{% endblock %}
     </div>
   </div>
+  <button class="admin-sidebar-backdrop" type="button" data-admin-menu-close aria-label="Close admin menu"></button>
 </div>
+<script>
+  (() => {
+    const toggle = document.querySelector("[data-admin-menu-toggle]");
+    const backdrop = document.querySelector("[data-admin-menu-close]");
+    const sidebar = document.querySelector(".admin-sidebar");
+    if (!toggle || !backdrop || !sidebar) return;
+    sidebar.id = "admin-sidebar";
+    const closeMenu = () => {
+      document.body.classList.remove("admin-menu-open");
+      toggle.setAttribute("aria-expanded", "false");
+      toggle.setAttribute("aria-label", "Open admin menu");
+    };
+    toggle.addEventListener("click", () => {
+      const open = document.body.classList.toggle("admin-menu-open");
+      toggle.setAttribute("aria-expanded", String(open));
+      toggle.setAttribute("aria-label", open ? "Close admin menu" : "Open admin menu");
+    });
+    backdrop.addEventListener("click", closeMenu);
+    sidebar.querySelectorAll("a").forEach((link) => link.addEventListener("click", closeMenu));
+    document.addEventListener("keydown", (event) => {
+      if (event.key === "Escape") closeMenu();
+    });
+  })();
+</script>
 {% endblock %}

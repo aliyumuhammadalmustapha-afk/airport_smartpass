@@ -1,0 +1,276 @@
+/* Shared phone and tablet layout corrections. Loaded after page styles. */
+*,
+*::before,
+*::after {
+  min-width: 0;
+}
+
+html,
+body {
+  max-width: 100%;
+  overflow-x: clip;
+}
+
+img,
+video,
+canvas,
+svg {
+  max-width: 100%;
+}
+
+input,
+select,
+textarea,
+button {
+  max-width: 100%;
+}
+
+.table-wrap,
+.table-responsive,
+.table-responsive > table {
+  max-width: 100%;
+}
+
+.table-wrap,
+.table-responsive {
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+}
+
+@media (max-width: 991px) {
+  .admin-shell {
+    display: block !important;
+    min-height: 100vh;
+    overflow: visible !important;
+  }
+
+  .admin-sidebar {
+    position: fixed !important;
+    z-index: 1200;
+    inset: 0 auto 0 0;
+    width: min(290px, 86vw) !important;
+    height: 100vh;
+    height: 100dvh;
+    transform: translateX(-105%);
+    transition: transform 220ms ease;
+    box-shadow: 16px 0 40px rgba(11, 18, 32, 0.2);
+  }
+
+  body.admin-menu-open {
+    overflow: hidden;
+  }
+
+  body.admin-menu-open .admin-sidebar {
+    transform: translateX(0);
+  }
+
+  .admin-sidebar-backdrop {
+    display: block;
+    position: fixed;
+    inset: 0;
+    z-index: 1190;
+    width: 100%;
+    height: 100%;
+    padding: 0;
+    border: 0;
+    background: rgba(11, 18, 32, 0.52);
+    opacity: 0;
+    visibility: hidden;
+    transition: opacity 220ms ease, visibility 220ms ease;
+  }
+
+  body.admin-menu-open .admin-sidebar-backdrop {
+    opacity: 1;
+    visibility: visible;
+  }
+
+  .admin-content-area {
+    min-height: 100vh;
+    overflow: visible !important;
+  }
+
+  .admin-menu-toggle {
+    display: inline-flex !important;
+    align-items: center;
+    gap: 7px;
+    flex: 0 0 auto;
+  }
+
+  .admin-topbar {
+    position: sticky;
+    z-index: 20;
+    gap: 10px;
+    padding: 12px 20px !important;
+  }
+
+  .admin-topbar > .row-flex {
+    justify-content: flex-end;
+    gap: 6px;
+  }
+
+  .admin-main {
+    padding: 28px 20px !important;
+  }
+}
+
+@media (max-width: 767px) {
+  main [style*="width:"] {
+    max-width: 100% !important;
+  }
+
+  main [style*="min-width:"] {
+    min-width: 0 !important;
+  }
+
+  .wrap {
+    padding-inline: 16px !important;
+  }
+
+  .surface-pad {
+    padding: 20px !important;
+  }
+
+  .nav__inner {
+    gap: 8px;
+  }
+
+  .nav__actions {
+    gap: 4px;
+  }
+
+  .nav__actions > .btn,
+  .nav__actions > form .btn {
+    padding-inline: 9px;
+  }
+
+  .nav__actions > a .ico {
+    margin-right: 0;
+  }
+
+  .section-head {
+    margin-bottom: 28px;
+  }
+
+  .row-between {
+    align-items: flex-start;
+  }
+
+  .grid-2,
+  .grid-3 {
+    gap: 14px;
+  }
+
+  .table-wrap,
+  .table-responsive {
+    margin-inline: -2px;
+  }
+
+  .table-responsive > table {
+    min-width: 620px;
+  }
+
+  .dtable {
+    min-width: 640px;
+  }
+
+  .scanner-layout {
+    gap: 20px !important;
+    padding: 20px 16px !important;
+  }
+
+  .f-card > div:nth-child(2) {
+    padding: 16px !important;
+    gap: 14px !important;
+  }
+
+  .f-card > div:nth-child(2) > div:first-child {
+    flex: 1 1 100% !important;
+    min-width: 0 !important;
+    justify-content: space-between;
+    gap: clamp(10px, 4vw, 24px) !important;
+  }
+
+  .f-card > div:nth-child(2) > div:not(:first-child) {
+    flex: 1 1 100%;
+    min-width: 0 !important;
+    border-left: 0 !important;
+    border-top: 1px solid var(--line);
+    padding: 14px 0 0 !important;
+  }
+
+  .footer__bar {
+    align-items: flex-start;
+    flex-direction: column;
+    gap: 8px;
+  }
+
+  .admin-topbar {
+    flex-wrap: wrap;
+    padding: 10px 12px !important;
+  }
+
+  .admin-topbar > div:first-of-type {
+    flex: 1 1 auto;
+  }
+
+  .admin-topbar > .row-flex {
+    flex: 1 1 100%;
+    justify-content: flex-end;
+  }
+
+  .admin-main {
+    padding: 20px 14px !important;
+  }
+
+  .admin-main .grid-3 {
+    grid-template-columns: 1fr !important;
+  }
+
+  .admin-main .grid-3 > * {
+    grid-column: auto !important;
+  }
+
+  .admin-main h1,
+  .admin-main h2 {
+    overflow-wrap: anywhere;
+  }
+
+  .flash-stack {
+    width: 100%;
+  }
+}
+
+@media (max-width: 420px) {
+  .brand {
+    gap: 8px;
+  }
+
+  .brand__mark {
+    width: 32px;
+    height: 32px;
+  }
+
+  .brand__name {
+    font-size: 14px;
+  }
+
+  .brand__sub {
+    font-size: 8px;
+  }
+
+  .nav__actions > a.btn .ico {
+    display: none;
+  }
+
+  .admin-topbar > .row-flex .btn {
+    font-size: 12px;
+    padding: 8px 9px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .admin-sidebar,
+  .admin-sidebar-backdrop {
+    transition: none !important;
+  }
+}
