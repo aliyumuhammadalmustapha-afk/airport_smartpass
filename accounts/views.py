@@ -14,12 +14,20 @@ def home(request):
     if request.method == "POST":
         ref = request.POST.get("booking_reference", "").strip().upper()
         if ref:
-            booking = Booking.objects.filter(booking_reference=ref).first()
+            if not request.user.is_authenticated:
+                messages.info(request, "Please sign in with the account used to make this booking, then enter your reference again.")
+                return redirect("login")
+
+            booking = Booking.objects.filter(
+                booking_reference=ref,
+                passenger=request.user,
+                booking_status="confirmed",
+            ).first()
             if booking:
                 if hasattr(booking, "boarding_pass") and booking.boarding_pass.is_checked_in:
                     return redirect("boarding_pass_detail", pass_id=booking.boarding_pass.id)
                 return redirect("check_in", booking_id=booking.id)
-            messages.error(request, "Booking reference not found. Please check the code.")
+            messages.error(request, "We couldn't find an active booking with that reference for your account. Check the reference and sign in with the account used to book.")
     
     upcoming_flights = Flight.objects.select_related("airline").filter(
         departure_date__gte=timezone.localdate()
